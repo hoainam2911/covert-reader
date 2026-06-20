@@ -47,7 +47,7 @@ window.SUPABASE_ANON_KEY = "eyJ....(chuỗi dài của bạn)....";
    - Chọn **Public**
    - Bấm **Create repository**
 2. Trong trang repo vừa tạo, bấm **uploading an existing file** (hoặc kéo thả)
-3. Kéo thả **cả 4 file**: `index.html`, `app.html`, `config.js` (đã điền key), và **không cần** `schema.sql` (chỉ dùng 1 lần lúc setup database, không cần đưa lên web)
+3. Kéo thả **tất cả 6 file**: `index.html`, `app.html`, `style.css`, `translator.js`, `library.js`, `config.js` (đã điền key). **Không cần** đưa `schema.sql` lên (chỉ dùng 1 lần lúc setup database).
 4. Bấm **Commit changes**
 5. Vào tab **Settings** của repo → menu trái chọn **Pages**
 6. Ở mục **Branch**, chọn `main` → thư mục `/ (root)` → bấm **Save**
