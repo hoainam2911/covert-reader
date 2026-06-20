@@ -12,17 +12,37 @@
 <div id="libraryScreen" class="active">
   <div class="lib-header">
     <div class="logo" style="width:30px;height:30px;background:var(--accent);border-radius:7px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:15px;color:#111;">S</div>
-    <h1>📚 Thư viện truyện</h1>
+    <h1 id="libScreenTitle">📚 Thư viện truyện</h1>
+    <div class="lib-nav-tabs">
+      <button class="lib-nav-tab active" id="navMyLib">📚 Của tôi</button>
+      <button class="lib-nav-tab" id="navCommunity">🌐 Cộng đồng</button>
+    </div>
     <span class="sync-badge" id="syncBadge"><span class="sync-dot"></span><span id="syncText">Đã đồng bộ</span></span>
     <span class="lib-user" id="libUserEmail"></span>
     <button class="lib-logout" id="logoutBtn">Đăng xuất</button>
   </div>
-  <div class="lib-body">
+
+  <!-- MY LIBRARY VIEW -->
+  <div class="lib-body" id="myLibBody">
     <div class="lib-toolbar">
       <button class="lib-new-btn" id="newNovelBtn">➕ Dịch truyện mới</button>
     </div>
     <div id="libContent">
       <div class="lib-loading">Đang tải thư viện...</div>
+    </div>
+  </div>
+
+  <!-- COMMUNITY VIEW -->
+  <div class="lib-body" id="communityBody" style="display:none">
+    <div class="comm-toolbar">
+      <div class="comm-section-tabs">
+        <button class="comm-section-tab active" id="commSectionNormal">📖 Truyện thường</button>
+        <button class="comm-section-tab nsfw" id="commSectionNSFW">🔞 NSFW</button>
+      </div>
+      <div class="comm-genre-row" id="commGenreRow"></div>
+    </div>
+    <div id="commContent">
+      <div class="lib-loading">Đang tải...</div>
     </div>
   </div>
 </div>
@@ -39,6 +59,46 @@
       <button class="btn btn-ghost" id="nnCancel">Huỷ</button>
       <button class="btn btn-primary" id="nnCreate">Tạo &amp; bắt đầu dịch</button>
     </div>
+  </div>
+</div>
+
+<!-- Publish to community modal -->
+<div class="nn-overlay" id="pubOverlay">
+  <div class="nn-box" style="width:460px;">
+    <h2>🌐 Đăng lên Cộng đồng</h2>
+    <label>Tên hiển thị tác giả</label>
+    <input type="text" id="pubAuthor" placeholder="Tên bạn muốn hiện (để trống = Ẩn danh)">
+    <label>Mô tả ngắn</label>
+    <input type="text" id="pubDesc" placeholder="Giới thiệu ngắn về truyện...">
+    <label>Thể loại</label>
+    <select id="pubGenre"></select>
+    <label>Biểu tượng bìa</label>
+    <div class="nn-emoji-row" id="pubEmojiRow"></div>
+    <div class="pub-nsfw-row">
+      <label class="pub-check"><input type="checkbox" id="pubIsNsfw"> Truyện 18+ / NSFW (sẽ đăng vào khu riêng)</label>
+    </div>
+    <div id="pubPassRow" style="display:none">
+      <label>Mật khẩu xem truyện (để trống = ai cũng xem được, không cần pass)</label>
+      <input type="text" id="pubPassword" placeholder="Mật khẩu tuỳ chọn...">
+    </div>
+    <div class="nn-actions">
+      <button class="btn btn-ghost" id="pubCancel">Huỷ</button>
+      <button class="btn btn-primary" id="pubConfirm">✅ Đăng truyện</button>
+    </div>
+  </div>
+</div>
+
+<!-- NSFW password gate modal -->
+<div class="nn-overlay" id="nsfwGateOverlay">
+  <div class="nn-box" style="width:360px;text-align:center;">
+    <h2>🔞 Truyện giới hạn độ tuổi</h2>
+    <p style="font-size:12.5px;color:var(--muted);margin-bottom:14px;">Truyện này yêu cầu mật khẩu để xem.</p>
+    <input type="text" id="nsfwGatePass" placeholder="Nhập mật khẩu...">
+    <div class="nn-actions" style="margin-top:14px;">
+      <button class="btn btn-ghost" id="nsfwGateCancel">Huỷ</button>
+      <button class="btn btn-primary" id="nsfwGateConfirm">Xem truyện</button>
+    </div>
+    <p class="nn-msg" id="nsfwGateMsg" style="color:var(--red);font-size:12px;margin-top:8px;"></p>
   </div>
 </div>
 
@@ -121,8 +181,7 @@
         <div class="edit-banner" id="editBanner">✏ Đang ở chế độ sửa — gõ thêm/xoá tuỳ ý, bấm "Lưu" để lưu lại</div>
         <div class="empty" id="emptyR"><div class="big">🀄</div><p>Chọn file rồi bấm "Bắt đầu dịch"</p></div>
         <div class="taw" id="resultWrap" style="display:none">
-          <div class="out" id="resultView" style="overflow-y:auto;cursor:text;"></div>
-          <textarea class="out" id="resultArea" readonly style="display:none"></textarea>
+          <textarea class="out" id="resultArea" readonly></textarea>
         </div>
       </div>
       <div class="panel" id="panel-source">
@@ -137,30 +196,13 @@
       <button class="btn btn-ghost" id="dlBtn" disabled>⬇ Tải .txt</button>
       <button class="btn btn-ghost" id="cpBtn" disabled>📋 Sao chép</button>
       <button class="btn btn-primary" id="readBtn" disabled>📖 Mở đọc</button>
+      <button class="btn btn-ghost" id="publishBtn" disabled title="Đăng lên cộng đồng cho mọi người đọc">🌐 Đăng cộng đồng</button>
       <span class="cnt" id="lineCnt"></span>
     </div>
   </div>
 </div>
 
-<!-- WORD EDIT POPUP -->
-<div class="wpop-overlay" id="wpop">
-  <div class="wpop">
-    <button class="wpop-close" id="wpopClose">✕</button>
-    <div class="wpop-orig">Đang sửa: <b id="wpopOrig">—</b></div>
-    <input type="text" id="wpopInput" class="wpop-input" placeholder="Nhập từ thay thế...">
-    <div class="wpop-expand">
-      <button class="wpop-exp-btn" id="wpopExpL">◀ Mở rộng</button>
-      <span class="wpop-exp-label">Gợi ý dịch khác</span>
-      <button class="wpop-exp-btn" id="wpopExpR">Mở rộng ▶</button>
-    </div>
-    <div class="wpop-suggestions" id="wpopSugg"></div>
-    <div class="wpop-actions">
-      <button class="btn btn-primary" id="wpopApplyAll">✓ Đổi tất cả "<span id="wpopOrig2">—</span>"</button>
-      <button class="btn btn-ghost" id="wpopApplyOne">Chỉ đổi chữ này</button>
-    </div>
-    <div class="wpop-msg" id="wpopMsg"></div>
-  </div>
-</div>
+
 
 <!-- READER PANE -->
 <div id="readerPane" style="position:relative;">
@@ -258,7 +300,6 @@
 </div>
 
 </div><!-- app-body -->
-
 
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>

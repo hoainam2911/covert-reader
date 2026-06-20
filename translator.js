@@ -1,5 +1,4 @@
-// twp = translate word popup (legacy, kept for compatibility)
-window.__twpData=null;
+/* STV translator/reader engine */
 
 
 /* THEMES */
@@ -35,7 +34,7 @@ const sourceArea=document.getElementById('sourceArea');
 function applyTFont(){
   const ff=document.getElementById('tFont').value;
   document.getElementById('tFontSz').textContent=tFsz+'px';
-  [resultArea,sourceArea,document.getElementById('resultView')].forEach(ta=>{ta.style.fontFamily=ff;ta.style.fontSize=tFsz+'px';});
+  [resultArea,sourceArea].forEach(ta=>{ta.style.fontFamily=ff;ta.style.fontSize=tFsz+'px';});
 }
 document.getElementById('tFont').addEventListener('change',applyTFont);
 document.getElementById('tFontP').addEventListener('click',()=>{if(tFsz<32){tFsz++;applyTFont();}});
@@ -84,10 +83,10 @@ function loadFile(file){
     sourceArea.value=text;
     emptyS.style.display='none';sourceWrap.style.display='block';
     emptyR.style.display='flex';resultWrap.style.display='none';
-    resultArea.value='';resultView.innerHTML='';
-    if(typeof editedWords!=='undefined')editedWords=new Set();
+    resultArea.value='';
     lineCnt.textContent=`${srcLines.length} dòng`;
     startBtn.disabled=false;dlBtn.disabled=true;cpBtn.disabled=true;readBtn.disabled=true;editBtn.disabled=true;
+    if(document.getElementById('publishBtn'))document.getElementById('publishBtn').disabled=true;
     exitEditMode(true);
     setSt('idle','Sẵn sàng');
     addLog('inf',`Đã tải: ${file.name} — ${srcLines.length} dòng`);
@@ -133,7 +132,7 @@ async function startTrans(){
       done+=batch.length;
       const pct=total>0?Math.round(done/total*100):100;
       prgFill.style.width=pct+'%';prgTxt.textContent=`${done}/${total} dòng (${pct}%)`;
-      resultView.textContent=transLines.join('\n');
+      resultArea.value=transLines.join('\n');
       addLog('ok',`Batch ${Math.ceil(b/bs)+1}: dòng ${batch[0]+1}–${batch[batch.length-1]+1}`);
     }catch(e){
       addLog('er',`Lỗi batch dòng ${batch[0]+1}: ${e.message}`);
@@ -141,7 +140,7 @@ async function startTrans(){
     }
     if(b+bs<todo.length)await sleep(dl);
   }
-  renderResultView();
+  resultArea.value=transLines.join('\n');
   running=false;startBtn.disabled=false;stopBtn.disabled=true;
   dlBtn.disabled=false;cpBtn.disabled=false;readBtn.disabled=false;editBtn.disabled=false;
   if(!stopFlag){setSt('done','Hoàn tất');addLog('inf','✓ Dịch xong!');}
@@ -154,8 +153,6 @@ stopBtn.addEventListener('click',()=>{stopFlag=true;});
 function enterEditMode(){
   resultArea.value=transLines.join('\n');
   resultArea.removeAttribute('readonly');
-  resultArea.style.display='block';
-  resultView.style.display='none';
   editBanner.classList.add('show');
   editBtn.textContent='💾 Lưu';
   resultArea.focus();
@@ -163,157 +160,14 @@ function enterEditMode(){
 function exitEditMode(skipSync){
   if(!skipSync) transLines=resultArea.value.split('\n');
   resultArea.setAttribute('readonly','');
-  resultArea.style.display='none';
-  resultView.style.display='block';
   editBanner.classList.remove('show');
   editBtn.textContent='✏ Sửa';
-  renderResultView();
+  resultArea.value=transLines.join('\n');
 }
 editBtn.addEventListener('click',()=>{
   if(resultArea.hasAttribute('readonly')){enterEditMode();}
   else{exitEditMode();addLog('ok','Đã lưu nội dung đã sửa.');}
 });
-
-/* ===== CLICKABLE WORD VIEW ===== */
-const resultView=document.getElementById('resultView');
-const VWORD_RE=/[A-Za-zÀ-ỹĐđ]+/g;
-let editedWords=new Set(); // tracks lowercase words user has globally replaced (for underline marker)
-function renderResultView(){
-  resultView.innerHTML='';
-  transLines.forEach((line,li)=>{
-    const p=document.createElement('p');
-    if(!line){p.innerHTML='&nbsp;';resultView.appendChild(p);return;}
-    let last=0,m;VWORD_RE.lastIndex=0;
-    while((m=VWORD_RE.exec(line))){
-      if(m.index>last)p.appendChild(document.createTextNode(line.slice(last,m.index)));
-      const span=document.createElement('span');
-      span.className='rword';
-      span.textContent=m[0];
-      span.dataset.line=li;
-      span.dataset.start=m.index;
-      span.dataset.end=m.index+m[0].length;
-      if(editedWords.has(m[0].toLowerCase()))span.classList.add('edited');
-      span.addEventListener('click',()=>openWordPopup(m[0],li,m.index,m.index+m[0].length));
-      p.appendChild(span);
-      last=m.index+m[0].length;
-    }
-    if(last<line.length)p.appendChild(document.createTextNode(line.slice(last)));
-    resultView.appendChild(p);
-  });
-}
-
-/* ===== WORD POPUP: click a word -> suggest alt translations / type custom / apply to all ===== */
-const wpop=document.getElementById('wpop');
-const wpopOrig=document.getElementById('wpopOrig'),wpopOrig2=document.getElementById('wpopOrig2');
-const wpopInput=document.getElementById('wpopInput');
-const wpopSugg=document.getElementById('wpopSugg');
-const wpopMsg=document.getElementById('wpopMsg');
-let wpopCtx=null; // {word,line,start,end}
-let wpopExpandStep=0; // tracks how many suggestion sets have been loaded
-
-// Local synonym bank for common wuxia/xianxia translated terms (Hán Việt -> common alt phrasing)
-// Each key (lowercased) maps to an array of alternative Vietnamese phrasings.
-const SYN_BANK={
-  'hắc long':['Rồng Đen','Hắc Long','Long Đen'],
-  'thanh long':['Rồng Xanh','Thanh Long','Long Xanh'],
-  'bạch hổ':['Hổ Trắng','Bạch Hổ','Hổ Bạch'],
-  'huyền vũ':['Huyền Vũ','Rùa Đen','Quy Xà'],
-  'chu tước':['Chu Tước','Phượng Hoàng Đỏ','Tước Đỏ'],
-  'thiếu gia':['Thiếu gia','Công tử','Cậu chủ'],
-  'tiểu thư':['Tiểu thư','Cô nương','Cô chủ'],
-  'đại nhân':['Đại nhân','Ngài','Ngài đây'],
-  'tiền bối':['Tiền bối','Bậc tiền bối','Bậc đàn anh'],
-  'sư phụ':['Sư phụ','Thầy','Sư tôn'],
-  'sư huynh':['Sư huynh','Đại sư huynh','Huynh trưởng'],
-  'sư muội':['Sư muội','Tiểu sư muội','Muội muội'],
-  'tu sĩ':['Tu sĩ','Người tu hành','Đạo sĩ'],
-  'cao thủ':['Cao thủ','Đại cao thủ','Bậc cao thủ'],
-  'chân nhân':['Chân nhân','Đạo trưởng','Chân quân'],
-  'đạo hữu':['Đạo hữu','Bằng hữu','Người bạn đạo'],
-  'tông môn':['Tông môn','Môn phái','Tông phái'],
-  'thượng đảo':['Thượng Đảo','Đảo Trên','Đảo Thượng'],
-};
-
-function getSuggestions(word,step){
-  const key=word.toLowerCase();
-  const bank=SYN_BANK[key];
-  if(bank&&bank.length) return bank.slice(0,4+step*3);
-  // Fallback: generate generic case variants so the button still does something
-  const variants=new Set([
-    word,
-    word.toUpperCase(),
-    word.charAt(0).toUpperCase()+word.slice(1).toLowerCase(),
-    word.toLowerCase(),
-  ]);
-  return [...variants];
-}
-
-function renderSuggestions(){
-  const list=getSuggestions(wpopCtx.word,wpopExpandStep);
-  wpopSugg.innerHTML='';
-  if(!list.length){
-    wpopSugg.innerHTML='<div class="wpop-sugg-empty">Không có gợi ý — hãy tự nhập</div>';
-  } else {
-    list.forEach(s=>{
-      const b=document.createElement('button');
-      b.type='button';b.className='wpop-sugg-item';b.textContent=s;
-      b.addEventListener('click',()=>{wpopInput.value=s;wpopInput.focus();});
-      wpopSugg.appendChild(b);
-    });
-  }
-  wpopSugg.classList.add('show');
-}
-
-function openWordPopup(word,line,start,end){
-  wpopCtx={word,line,start,end};
-  wpopOrig.textContent=word;wpopOrig2.textContent=word;
-  wpopInput.value=word;
-  wpopMsg.textContent='';
-  wpopExpandStep=0;
-  wpopSugg.classList.remove('show');wpopSugg.innerHTML='';
-  wpop.classList.add('open');
-  setTimeout(()=>{wpopInput.focus();wpopInput.select();},60);
-}
-function closeWordPopup(){wpop.classList.remove('open');wpopCtx=null;}
-
-document.getElementById('wpopClose').addEventListener('click',closeWordPopup);
-wpop.addEventListener('click',e=>{if(e.target===wpop)closeWordPopup();});
-document.getElementById('wpopExpL').addEventListener('click',()=>{wpopExpandStep++;renderSuggestions();});
-document.getElementById('wpopExpR').addEventListener('click',()=>{wpopExpandStep++;renderSuggestions();});
-
-// Replace just this single occurrence
-document.getElementById('wpopApplyOne').addEventListener('click',()=>{
-  if(!wpopCtx)return;
-  const val=wpopInput.value.trim();if(!val)return;
-  const {line,start,end}=wpopCtx;
-  const l=transLines[line];
-  transLines[line]=l.slice(0,start)+val+l.slice(end);
-  renderResultView();
-  wpopMsg.textContent='Đã đổi 1 chỗ.';
-  setTimeout(closeWordPopup,500);
-});
-
-// Replace all occurrences (case-sensitive, whole-word) across the whole translation
-document.getElementById('wpopApplyAll').addEventListener('click',()=>{
-  if(!wpopCtx)return;
-  const val=wpopInput.value.trim();if(!val)return;
-  const orig=wpopCtx.word;
-  const re=new RegExp('\\b'+orig.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'\\b','g');
-  let count=0;
-  transLines=transLines.map(l=>{
-    if(!l)return l;
-    return l.replace(re,m=>{count++;return val;});
-  });
-  editedWords.add(orig.toLowerCase());
-  renderResultView();
-  wpopMsg.textContent=`Đã đổi ${count} chỗ trong toàn bộ bản dịch.`;
-  setTimeout(closeWordPopup,700);
-});
-wpopInput.addEventListener('keydown',e=>{
-  if(e.key==='Enter'){e.preventDefault();document.getElementById('wpopApplyAll').click();}
-  if(e.key==='Escape')closeWordPopup();
-});
-
 
 dlBtn.addEventListener('click',()=>{
   if(!resultArea.hasAttribute('readonly')) exitEditMode();
@@ -728,104 +582,4 @@ document.addEventListener('keydown',e=>{
   if(!inp&&e.key===' '&&!ttsBar.classList.contains('hidden')){
     e.preventDefault();ttsPlay.click();
   }
-});
-
-/* ===== WORD TRANSLATE-EDIT POPUP ===== */
-const twp=document.getElementById('twp');
-const twpOrigZw=document.getElementById('twpOrigZw');
-const twpCurVal=document.getElementById('twpCurVal');
-const twpInput=document.getElementById('twpInput');
-const twpSuggestWrap=document.getElementById('twpSuggestWrap');
-const twpSuggestList=document.getElementById('twpSuggestList');
-const twpLoading=document.getElementById('twpLoading');
-let twpCtx=null;
-
-function openWordPopup(word, lineIdx, start, end){
-  twpCtx={word};
-  twpInput.value=word;
-  twpCurVal.textContent=word;
-  twpOrigZw.textContent='';
-  twpSuggestWrap.style.display='none';
-  twpSuggestList.innerHTML='';
-  twp.classList.add('open');
-  setTimeout(()=>{twpInput.focus();twpInput.select();},50);
-}
-
-async function fetchSuggestions(word){
-  twpLoading.style.display='block';
-  try{
-    const sv=document.getElementById('server').value;
-    const res=await fetch('https://'+sv+'/',{
-      method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},
-      body:'sajax=layname&content='+encodeURIComponent(word)
-    });
-    if(res.ok){
-      const txt=await res.text();
-      let opts=[];
-      try{
-        const j=JSON.parse(txt);
-        if(Array.isArray(j))opts=j.map(x=>typeof x==='string'?x:(x.vi||x.name||x.value||'')).filter(Boolean);
-        else if(j&&typeof j==='object')opts=Object.values(j).filter(v=>typeof v==='string');
-      }catch(e){
-        opts=txt.split(/[\n,|]/).map(s=>s.trim()).filter(s=>s&&s!==word);
-      }
-      return opts.filter((v,i,a)=>a.indexOf(v)===i).slice(0,8);
-    }
-  }catch(e){/* silent */}
-  finally{twpLoading.style.display='none';}
-  return [];
-}
-
-function renderChips(opts){
-  twpSuggestList.innerHTML='';
-  if(!opts.length){
-    twpSuggestWrap.style.display='none';
-    addLog('inf','Không có gợi ý khác từ server cho từ này — bạn có thể tự nhập.');
-    return;
-  }
-  twpSuggestWrap.style.display='flex';
-  opts.forEach(o=>{
-    const chip=document.createElement('span');
-    chip.className='twp-chip';
-    chip.textContent=o;
-    chip.addEventListener('click',()=>{
-      document.querySelectorAll('.twp-chip').forEach(c=>c.classList.remove('sel'));
-      chip.classList.add('sel');
-      twpInput.value=o;
-    });
-    twpSuggestList.appendChild(chip);
-  });
-}
-
-document.getElementById('twpExpandR').addEventListener('click',async()=>{
-  if(!twpCtx)return;
-  renderChips(await fetchSuggestions(twpCtx.word));
-});
-document.getElementById('twpExpandL').addEventListener('click',async()=>{
-  if(!twpCtx)return;
-  const opts=await fetchSuggestions(twpCtx.word);
-  renderChips(opts.reverse());
-});
-
-function closeWP(){twp.classList.remove('open');twpCtx=null;}
-document.getElementById('twpClose').addEventListener('click',closeWP);
-document.getElementById('twpCancel').addEventListener('click',closeWP);
-twp.addEventListener('click',e=>{if(e.target===twp)closeWP();});
-twpInput.addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('twpApply').click();if(e.key==='Escape')closeWP();});
-
-document.getElementById('twpApply').addEventListener('click',()=>{
-  if(!twpCtx)return;
-  const oldW=twpCtx.word;
-  const newW=twpInput.value.trim();
-  if(!newW||newW===oldW){closeWP();return;}
-  const re=new RegExp('\\b'+oldW.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'\\b','g');
-  let count=0;
-  transLines=transLines.map(line=>{
-    if(re.test(line)){count+=(line.match(re)||[]).length;return line.replace(re,newW);}
-    return line;
-  });
-  editedWords.add(oldW.toLowerCase());
-  renderResultView();
-  closeWP();
-  addLog('ok',`Đã đổi "${oldW}" → "${newW}" (${count} chỗ).`);
 });
