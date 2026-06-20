@@ -259,38 +259,7 @@
 
 </div><!-- app-body -->
 
-<!-- WORD TRANSLATE-EDIT POPUP -->
-<div class="overlay" id="twp">
-  <div class="popup" id="twpBox" style="width:440px;">
-    <button class="popup-close" id="twpClose">✕</button>
-    <h2 style="display:flex;align-items:center;gap:8px;">✏ Sửa nghĩa từ
-      <span id="twpOrigZw" style="background:var(--surface2);padding:2px 9px;border-radius:6px;font-size:14px;color:var(--accent);font-weight:700;"></span>
-    </h2>
-    <div style="font-size:11px;color:var(--muted);">Đang dịch là: <strong id="twpCurVal" style="color:var(--text);"></strong></div>
 
-    <div id="twpSuggestWrap" style="display:none;flex-direction:column;gap:6px;">
-      <div class="slabel" style="margin:0;">Gợi ý khác</div>
-      <div id="twpSuggestList" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
-    </div>
-
-    <div style="display:flex;align-items:center;justify-content:center;gap:10px;">
-      <button class="btn btn-ghost" id="twpExpandL" title="Xem thêm gợi ý" style="width:auto;padding:6px 12px;">◀ Mở rộng</button>
-      <button class="btn btn-ghost" id="twpExpandR" title="Xem thêm gợi ý" style="width:auto;padding:6px 12px;">Mở rộng ▶</button>
-    </div>
-
-    <div class="row">
-      <div class="slabel">Tự nhập nghĩa khác</div>
-      <input type="text" id="twpInput" placeholder="Nhập nghĩa thay thế...">
-    </div>
-
-    <div id="twpLoading" style="display:none;font-size:11px;color:var(--muted);text-align:center;">⏳ Đang tải gợi ý...</div>
-
-    <div class="pa">
-      <button class="btn btn-ghost" id="twpCancel">Huỷ</button>
-      <button class="btn btn-primary" id="twpApply">✅ Đổi tất cả</button>
-    </div>
-  </div>
-</div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js"></script>
