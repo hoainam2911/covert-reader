@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>STV – Đăng nhập</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{
+  font-family:'Segoe UI',system-ui,sans-serif;
+  background:#f0ece4;color:#2a2520;
+  min-height:100vh;display:flex;align-items:center;justify-content:center;
+  padding:20px;
+}
+.card{
+  background:#faf8f4;border:1px solid #d4cfc5;border-radius:14px;
+  padding:36px 32px;width:380px;max-width:100%;
+  box-shadow:0 10px 40px rgba(0,0,0,.08);
+}
+.logo-row{display:flex;align-items:center;gap:10px;margin-bottom:22px;}
+.logo{width:38px;height:38px;background:#c47c1a;border-radius:9px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:18px;color:#fff;}
+.logo-row h1{font-size:18px;font-weight:700;}
+.tabs{display:flex;gap:4px;background:#ede9e0;border-radius:8px;padding:3px;margin-bottom:22px;}
+.tab{flex:1;text-align:center;padding:8px;font-size:13px;font-weight:600;border-radius:6px;cursor:pointer;color:#8a7a68;border:none;background:none;transition:all .15s;}
+.tab.active{background:#c47c1a;color:#fff;}
+.field{margin-bottom:14px;}
+.field label{font-size:12px;color:#8a7a68;display:block;margin-bottom:5px;}
+.field input{
+  width:100%;padding:10px 12px;border:1px solid #d4cfc5;border-radius:8px;
+  font-size:14px;outline:none;background:#fff;color:#2a2520;
+}
+.field input:focus{border-color:#c47c1a;}
+.btn{
+  width:100%;padding:11px;border:none;border-radius:8px;
+  background:#c47c1a;color:#fff;font-size:14px;font-weight:700;
+  cursor:pointer;margin-top:6px;transition:opacity .15s;
+}
+.btn:hover{opacity:.9;}
+.btn:disabled{opacity:.5;cursor:not-allowed;}
+.msg{font-size:12.5px;margin-top:12px;text-align:center;min-height:18px;}
+.msg.err{color:#c0392b;}
+.msg.ok{color:#2e7d52;}
+.hint{font-size:11.5px;color:#8a7a68;text-align:center;margin-top:18px;line-height:1.6;}
+.setup-warn{
+  background:#fdecc8;border:1px solid #e8b54a;border-radius:8px;
+  padding:12px 14px;font-size:12px;color:#6b4d10;margin-bottom:18px;line-height:1.6;
+  display:none;
+}
+.setup-warn.show{display:block;}
+</style>
+</head>
+<body>
+
+<div class="card">
+  <div class="logo-row">
+    <div class="logo">S</div>
+    <h1>STV Dịch &amp; Đọc Truyện</h1>
+  </div>
+
+  <div class="setup-warn" id="setupWarn">
+    ⚠ Chưa cấu hình Supabase. Mở file <code>config.js</code> và điền <code>SUPABASE_URL</code> + <code>SUPABASE_ANON_KEY</code> trước khi dùng.
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" id="tabLogin">Đăng nhập</button>
+    <button class="tab" id="tabSignup">Đăng ký</button>
+  </div>
+
+  <form id="authForm">
+    <div class="field">
+      <label>Email</label>
+      <input type="email" id="email" placeholder="ban@email.com" required autocomplete="email">
+    </div>
+    <div class="field">
+      <label>Mật khẩu</label>
+      <input type="password" id="password" placeholder="••••••••" required autocomplete="current-password" minlength="6">
+    </div>
+    <button type="submit" class="btn" id="submitBtn">Đăng nhập</button>
+  </form>
+
+  <div class="msg" id="msg"></div>
+  <div class="hint">Truyện và tiến độ đọc của bạn sẽ được lưu trên đám mây,<br>mở trên điện thoại hay máy tính đều đồng bộ.</div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<script>
+let mode = 'login'; // or 'signup'
+const tabLogin = document.getElementById('tabLogin');
+const tabSignup = document.getElementById('tabSignup');
+const submitBtn = document.getElementById('submitBtn');
+const msg = document.getElementById('msg');
+const form = document.getElementById('authForm');
+
+// Check config
+let supabase = null;
+if (!window.SUPABASE_URL || window.SUPABASE_URL.includes('YOUR_')) {
+  document.getElementById('setupWarn').classList.add('show');
+} else {
+  supabase = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+  // Already logged in? go straight to app
+  supabase.auth.getSession().then(({ data }) => {
+    if (data.session) window.location.href = 'app.html';
+  });
+}
+
+tabLogin.addEventListener('click', () => {
+  mode = 'login';
+  tabLogin.classList.add('active'); tabSignup.classList.remove('active');
+  submitBtn.textContent = 'Đăng nhập';
+  msg.textContent = '';
+});
+tabSignup.addEventListener('click', () => {
+  mode = 'signup';
+  tabSignup.classList.add('active'); tabLogin.classList.remove('active');
+  submitBtn.textContent = 'Tạo tài khoản';
+  msg.textContent = '';
+});
+
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  if (!supabase) { msg.className='msg err'; msg.textContent='Chưa cấu hình Supabase trong config.js'; return; }
+  const email = document.getElementById('email').value.trim();
+  const password = document.getElementById('password').value;
+  submitBtn.disabled = true;
+  msg.className = 'msg'; msg.textContent = 'Đang xử lý...';
+
+  try {
+    if (mode === 'login') {
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+      window.location.href = 'app.html';
+    } else {
+      const { error } = await supabase.auth.signUp({ email, password });
+      if (error) throw error;
+      msg.className = 'msg ok';
+      msg.textContent = 'Đã tạo tài khoản! Kiểm tra email để xác nhận (nếu được bật), hoặc đăng nhập ngay.';
+    }
+  } catch (err) {
+    msg.className = 'msg err';
+    msg.textContent = translateError(err.message);
+  } finally {
+    submitBtn.disabled = false;
+  }
+});
+
+function translateError(m) {
+  if (/invalid login credentials/i.test(m)) return 'Sai email hoặc mật khẩu.';
+  if (/already registered/i.test(m)) return 'Email này đã được đăng ký.';
+  if (/password.*at least/i.test(m)) return 'Mật khẩu cần ít nhất 6 ký tự.';
+  if (/email.*invalid/i.test(m)) return 'Email không hợp lệ.';
+  return m;
+}
+</script>
+</body>
+</html>
