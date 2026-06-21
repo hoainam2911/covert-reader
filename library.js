@@ -83,10 +83,12 @@ async function loadLibrary(){
       <div class="lib-card-actions">
         <button class="lc-open">📖 Đọc</button>
         <button class="lc-edit">✏ Dịch/Sửa</button>
+        <button class="lc-info">ℹ Sửa</button>
         <button class="lc-del danger">🗑</button>
       </div>`;
     card.querySelector('.lc-open').addEventListener('click', e => { e.stopPropagation(); openNovel(n.id, 'read'); });
     card.querySelector('.lc-edit').addEventListener('click', e => { e.stopPropagation(); openNovel(n.id, 'translate'); });
+    card.querySelector('.lc-info').addEventListener('click', e => { e.stopPropagation(); openEditInfoModal(n); });
     card.querySelector('.lc-del').addEventListener('click', e => { e.stopPropagation(); deleteNovel(n.id, n.title); });
     card.addEventListener('click', () => openNovel(n.id, 'read'));
     grid.appendChild(card);
@@ -103,6 +105,120 @@ async function deleteNovel(id, title){
   if (error) { alert('Lỗi xoá: ' + error.message); return; }
   loadLibrary();
 }
+
+async function deleteCommunityNovel(id, title){
+  if (!confirm(`Xoá truyện "${title}" khỏi Cộng đồng? Không thể hoàn tác.`)) return;
+  const { error } = await sb.from('community_novels').delete().eq('id', id);
+  if (error) { alert('Lỗi xoá: ' + error.message); return; }
+  loadCommunity();
+}
+
+/* ===== EDIT NOVEL INFO MODAL (dùng chung: thư viện cá nhân + cộng đồng) ===== */
+const editInfoOverlay = document.getElementById('editInfoOverlay');
+const eiTitle = document.getElementById('eiTitle');
+const eiAuthor = document.getElementById('eiAuthor'), eiAuthorLabel = document.getElementById('eiAuthorLabel');
+const eiDesc = document.getElementById('eiDesc'), eiDescLabel = document.getElementById('eiDescLabel');
+const eiGenre = document.getElementById('eiGenre'), eiGenreLabel = document.getElementById('eiGenreLabel');
+const eiEmojiRow = document.getElementById('eiEmojiRow');
+const eiNsfwBlock = document.getElementById('eiNsfwBlock');
+const eiIsNsfw = document.getElementById('eiIsNsfw');
+const eiPassRow = document.getElementById('eiPassRow');
+const eiPassword = document.getElementById('eiPassword');
+const eiMsg = document.getElementById('eiMsg');
+let editInfoTarget = null; // { type: 'personal'|'community', novel }
+let eiSelectedEmoji = '📖';
+
+function buildEiEmojiRow(emojiList){
+  eiEmojiRow.innerHTML = '';
+  emojiList.forEach(em => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'nn-emoji' + (em===eiSelectedEmoji?' sel':'');
+    b.textContent = em;
+    b.addEventListener('click', () => {
+      eiSelectedEmoji = em;
+      eiEmojiRow.querySelectorAll('.nn-emoji').forEach(x=>x.classList.remove('sel'));
+      b.classList.add('sel');
+    });
+    eiEmojiRow.appendChild(b);
+  });
+}
+
+function openEditInfoModal(novel, type){
+  type = type || 'personal';
+  editInfoTarget = { type, novel };
+  eiMsg.textContent = '';
+  eiTitle.value = novel.title || '';
+  eiSelectedEmoji = novel.cover_emoji || '📖';
+
+  if (type === 'personal') {
+    eiAuthorLabel.style.display = 'none'; eiAuthor.style.display = 'none';
+    eiDescLabel.style.display = 'none'; eiDesc.style.display = 'none';
+    eiGenreLabel.style.display = 'none'; eiGenre.style.display = 'none';
+    eiNsfwBlock.style.display = 'none';
+    buildEiEmojiRow(EMOJIS);
+  } else {
+    eiAuthorLabel.style.display = ''; eiAuthor.style.display = '';
+    eiDescLabel.style.display = ''; eiDesc.style.display = '';
+    eiGenreLabel.style.display = ''; eiGenre.style.display = '';
+    eiNsfwBlock.style.display = '';
+    eiAuthor.value = novel.author_name || '';
+    eiDesc.value = novel.description || '';
+    if (!eiGenre.options.length) GENRES.forEach(g => {
+      const o = document.createElement('option'); o.value = g.id; o.textContent = g.label;
+      eiGenre.appendChild(o);
+    });
+    eiGenre.value = novel.genre || 'khac';
+    eiIsNsfw.checked = !!novel.is_nsfw;
+    eiPassRow.style.display = novel.is_nsfw ? '' : 'none';
+    eiPassword.value = novel.nsfw_password || '';
+    buildEiEmojiRow(COMM_EMOJIS);
+  }
+  editInfoOverlay.classList.add('open');
+  setTimeout(()=>eiTitle.focus(), 60);
+}
+eiIsNsfw.addEventListener('change', () => { eiPassRow.style.display = eiIsNsfw.checked ? '' : 'none'; });
+document.getElementById('eiCancel').addEventListener('click', () => editInfoOverlay.classList.remove('open'));
+editInfoOverlay.addEventListener('click', e => { if (e.target===editInfoOverlay) editInfoOverlay.classList.remove('open'); });
+
+document.getElementById('eiSave').addEventListener('click', async () => {
+  if (!editInfoTarget) return;
+  const title = eiTitle.value.trim();
+  if (!title) { eiMsg.style.color='var(--red)'; eiMsg.textContent='Tên truyện không được để trống.'; return; }
+
+  const btn = document.getElementById('eiSave');
+  btn.disabled = true; btn.textContent = 'Đang lưu...';
+
+  let error;
+  if (editInfoTarget.type === 'personal') {
+    ({ error } = await sb.from('novels').update({
+      title, cover_emoji: eiSelectedEmoji, updated_at: new Date().toISOString()
+    }).eq('id', editInfoTarget.novel.id));
+  } else {
+    ({ error } = await sb.from('community_novels').update({
+      title,
+      author_name: eiAuthor.value.trim() || 'Ẩn danh',
+      description: eiDesc.value.trim(),
+      genre: eiGenre.value,
+      cover_emoji: eiSelectedEmoji,
+      is_nsfw: eiIsNsfw.checked,
+      nsfw_password: eiIsNsfw.checked ? (eiPassword.value.trim() || null) : null,
+      updated_at: new Date().toISOString()
+    }).eq('id', editInfoTarget.novel.id));
+  }
+
+  btn.disabled = false; btn.textContent = '💾 Lưu thay đổi';
+  if (error) { eiMsg.style.color='var(--red)'; eiMsg.textContent = 'Lỗi: ' + error.message; return; }
+
+  editInfoOverlay.classList.remove('open');
+  // Reflect title change in app header if this is the currently open novel
+  if (currentNovel && editInfoTarget.novel.id === currentNovel.id) {
+    currentNovel.title = title;
+    document.querySelector('.app-title').textContent = '📖 ' + title;
+  }
+  if (editInfoTarget.type === 'personal') loadLibrary(); else loadCommunity();
+  editInfoTarget = null;
+});
 
 /* ===== NEW NOVEL MODAL ===== */
 const nnOverlay = document.getElementById('nnOverlay');
@@ -390,7 +506,7 @@ async function loadCommunity(){
   el.innerHTML = '<div class="lib-loading">Đang tải...</div>';
 
   let query = sb.from('community_novels')
-    .select('id,title,author_name,description,genre,cover_emoji,cover_color,total_lines,total_chapters,is_nsfw,nsfw_password,views,created_at')
+    .select('id,user_id,title,author_name,description,genre,cover_emoji,cover_color,total_lines,total_chapters,is_nsfw,nsfw_password,views,created_at')
     .eq('is_nsfw', commSection === 'nsfw')
     .order('created_at', { ascending: false });
   if (commGenreFilter) query = query.eq('genre', commGenreFilter);
@@ -405,6 +521,7 @@ async function loadCommunity(){
   const grid = document.createElement('div');
   grid.className = 'lib-grid';
   novels.forEach(n => {
+    const isOwner = currentUser && n.user_id === currentUser.id;
     const card = document.createElement('div');
     card.className = 'lib-card';
     card.innerHTML = `
@@ -420,7 +537,15 @@ async function loadCommunity(){
           <span class="comm-author">✍ ${esc(n.author_name||'Ẩn danh')}</span>
           <span class="comm-views">👁 ${n.views||0}</span>
         </div>
-      </div>`;
+      </div>
+      ${isOwner ? `<div class="lib-card-actions">
+        <button class="cc-info">ℹ Sửa</button>
+        <button class="cc-del danger">🗑</button>
+      </div>` : ''}`;
+    if (isOwner) {
+      card.querySelector('.cc-info').addEventListener('click', e => { e.stopPropagation(); openEditInfoModal(n, 'community'); });
+      card.querySelector('.cc-del').addEventListener('click', e => { e.stopPropagation(); deleteCommunityNovel(n.id, n.title); });
+    }
     card.addEventListener('click', () => openCommunityNovel(n));
     grid.appendChild(card);
   });

@@ -62,6 +62,35 @@
   </div>
 </div>
 
+<!-- Edit novel info modal (dùng chung cho thư viện cá nhân + truyện cộng đồng) -->
+<div class="nn-overlay" id="editInfoOverlay">
+  <div class="nn-box" style="width:460px;">
+    <h2>ℹ️ Sửa thông tin truyện</h2>
+    <label>Tên truyện</label>
+    <input type="text" id="eiTitle" placeholder="Tên truyện...">
+    <label id="eiAuthorLabel" style="display:none">Tên tác giả hiển thị</label>
+    <input type="text" id="eiAuthor" placeholder="Tên tác giả..." style="display:none">
+    <label id="eiDescLabel" style="display:none">Mô tả ngắn</label>
+    <input type="text" id="eiDesc" placeholder="Giới thiệu ngắn về truyện..." style="display:none">
+    <label id="eiGenreLabel" style="display:none">Thể loại</label>
+    <select id="eiGenre" style="display:none"></select>
+    <label>Biểu tượng bìa</label>
+    <div class="nn-emoji-row" id="eiEmojiRow"></div>
+    <div id="eiNsfwBlock" style="display:none">
+      <label class="pub-check"><input type="checkbox" id="eiIsNsfw"> Truyện 18+ / NSFW</label>
+      <div id="eiPassRow" style="display:none;margin-top:8px;">
+        <label>Mật khẩu xem truyện (để trống = không cần pass)</label>
+        <input type="text" id="eiPassword" placeholder="Mật khẩu tuỳ chọn...">
+      </div>
+    </div>
+    <div class="nn-actions">
+      <button class="btn btn-ghost" id="eiCancel">Huỷ</button>
+      <button class="btn btn-primary" id="eiSave">💾 Lưu thay đổi</button>
+    </div>
+    <p class="nn-msg" id="eiMsg" style="font-size:12px;margin-top:8px;text-align:center;min-height:16px;"></p>
+  </div>
+</div>
+
 <!-- Publish to community modal -->
 <div class="nn-overlay" id="pubOverlay">
   <div class="nn-box" style="width:460px;">
