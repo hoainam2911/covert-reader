@@ -220,10 +220,6 @@ input[type=file]{display:none;}
   display:flex;flex-direction:column;
 }
 .lib-card:hover{transform:translateY(-3px);border-color:var(--accent);}
-.lib-cover{
-  height:110px;display:flex;align-items:center;justify-content:center;
-  font-size:42px;flex-shrink:0;
-}
 .lib-info{padding:11px 13px;flex:1;display:flex;flex-direction:column;gap:4px;}
 .lib-title{font-size:13px;font-weight:700;line-height:1.4;
   display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}

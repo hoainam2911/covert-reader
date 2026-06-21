@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>STV – Dịch & Đọc TXT</title>
 <link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="web-truyen-theme.css">
 </head>
 <body class="light">
 
@@ -16,6 +17,8 @@
     <div class="lib-nav-tabs">
       <button class="lib-nav-tab active" id="navMyLib">📚 Của tôi</button>
       <button class="lib-nav-tab" id="navCommunity">🌐 Cộng đồng</button>
+      <button class="lib-nav-tab" id="navFavorites">⭐ Yêu thích</button>
+      <button class="lib-nav-tab" id="navHistory">🕐 Lịch sử</button>
     </div>
     <span class="sync-badge" id="syncBadge"><span class="sync-dot"></span><span id="syncText">Đã đồng bộ</span></span>
     <span class="lib-user" id="libUserEmail"></span>
@@ -45,16 +48,87 @@
       <div class="lib-loading">Đang tải...</div>
     </div>
   </div>
+
+  <!-- FAVORITES VIEW -->
+  <div class="lib-body" id="favoritesBody" style="display:none">
+    <div id="favContent">
+      <div class="lib-loading">Đang tải...</div>
+    </div>
+  </div>
+
+  <!-- HISTORY VIEW -->
+  <div class="lib-body" id="historyBody" style="display:none">
+    <div id="histContent">
+      <div class="lib-loading">Đang tải...</div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== NOVEL DETAIL SCREEN (trang chi tiết kiểu web truyện) ===== -->
+<div id="novelDetailScreen">
+  <div class="nd-topbar">
+    <button class="nd-back" id="ndBack">← Quay lại</button>
+  </div>
+  <div class="nd-hero">
+    <div class="nd-cover-wrap">
+      <div class="nd-cover" id="ndCover"><div class="cover-fallback">📖</div></div>
+      <button class="nd-action-btn nd-action-primary" id="ndReadBtn">📖 Đọc truyện</button>
+      <button class="nd-action-btn nd-action-secondary" id="ndFavBtn">☆ Thêm vào yêu thích</button>
+    </div>
+    <div class="nd-info">
+      <div class="nd-title" id="ndTitle">—</div>
+      <div class="nd-meta-row">
+        <span>✍ Tác giả: <span class="nd-author" id="ndAuthor">—</span></span>
+        <span class="nd-genre-badge" id="ndGenreBadge"></span>
+        <span class="nd-nsfw-badge" id="ndNsfwBadge" style="display:none">18+</span>
+      </div>
+      <div class="nd-stats-row">
+        <div class="nd-stat"><span class="num" id="ndViews">0</span><span class="lbl">Lượt xem</span></div>
+        <div class="nd-stat"><span class="num" id="ndChapCount">0</span><span class="lbl">Chương</span></div>
+        <div class="nd-stat">
+          <span class="nd-stars" id="ndStarsDisplay"></span>
+          <span class="lbl" id="ndRatingLbl">Chưa có đánh giá</span>
+        </div>
+      </div>
+      <p class="nd-desc" id="ndDesc"></p>
+      <div class="nd-rate-row">
+        <span class="nd-rate-label">Đánh giá của bạn:</span>
+        <div class="nd-rate-stars" id="ndRateStars"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="nd-section">
+    <div class="nd-section-title">Danh sách chương</div>
+    <div class="nd-chapter-grid" id="ndChapterGrid"></div>
+  </div>
+
+  <div class="nd-section">
+    <div class="nd-section-title">Bình luận (<span id="ndCommentCount">0</span>)</div>
+    <div class="nd-comment-form">
+      <div class="nd-comment-avatar" id="ndCommentAvatar">?</div>
+      <div class="nd-comment-input-wrap">
+        <textarea id="ndCommentInput" placeholder="Viết bình luận..."></textarea>
+        <button class="nd-comment-submit" id="ndCommentSubmit">Gửi bình luận</button>
+      </div>
+    </div>
+    <div class="nd-comment-list" id="ndCommentList"></div>
+  </div>
 </div>
 
 <!-- New novel modal -->
 <div class="nn-overlay" id="nnOverlay">
   <div class="nn-box">
     <h2>📖 Truyện mới</h2>
+    <label>Ảnh bìa</label>
+    <div class="cover-upload-box" id="nnCoverBox">
+      <div class="cu-icon">🖼️</div>
+      <div>Bấm để chọn ảnh</div>
+      <div class="cu-overlay">Đổi ảnh</div>
+    </div>
+    <input type="file" id="nnCoverInput" accept="image/*" style="display:none">
     <label>Tên truyện</label>
     <input type="text" id="nnTitle" placeholder="Nhập tên truyện...">
-    <label>Biểu tượng bìa</label>
-    <div class="nn-emoji-row" id="nnEmojiRow"></div>
     <div class="nn-actions">
       <button class="btn btn-ghost" id="nnCancel">Huỷ</button>
       <button class="btn btn-primary" id="nnCreate">Tạo &amp; bắt đầu dịch</button>
@@ -66,6 +140,13 @@
 <div class="nn-overlay" id="editInfoOverlay">
   <div class="nn-box" style="width:460px;">
     <h2>ℹ️ Sửa thông tin truyện</h2>
+    <label>Ảnh bìa</label>
+    <div class="cover-upload-box" id="eiCoverBox">
+      <div class="cu-icon">🖼️</div>
+      <div>Bấm để chọn ảnh</div>
+      <div class="cu-overlay">Đổi ảnh</div>
+    </div>
+    <input type="file" id="eiCoverInput" accept="image/*" style="display:none">
     <label>Tên truyện</label>
     <input type="text" id="eiTitle" placeholder="Tên truyện...">
     <label id="eiAuthorLabel" style="display:none">Tên tác giả hiển thị</label>
@@ -74,8 +155,6 @@
     <input type="text" id="eiDesc" placeholder="Giới thiệu ngắn về truyện..." style="display:none">
     <label id="eiGenreLabel" style="display:none">Thể loại</label>
     <select id="eiGenre" style="display:none"></select>
-    <label>Biểu tượng bìa</label>
-    <div class="nn-emoji-row" id="eiEmojiRow"></div>
     <div id="eiNsfwBlock" style="display:none">
       <label class="pub-check"><input type="checkbox" id="eiIsNsfw"> Truyện 18+ / NSFW</label>
       <div id="eiPassRow" style="display:none;margin-top:8px;">
@@ -95,14 +174,19 @@
 <div class="nn-overlay" id="pubOverlay">
   <div class="nn-box" style="width:460px;">
     <h2>🌐 Đăng lên Cộng đồng</h2>
+    <label>Ảnh bìa</label>
+    <div class="cover-upload-box" id="pubCoverBox">
+      <div class="cu-icon">🖼️</div>
+      <div>Bấm để chọn ảnh</div>
+      <div class="cu-overlay">Đổi ảnh</div>
+    </div>
+    <input type="file" id="pubCoverInput" accept="image/*" style="display:none">
     <label>Tên hiển thị tác giả</label>
     <input type="text" id="pubAuthor" placeholder="Tên bạn muốn hiện (để trống = Ẩn danh)">
     <label>Mô tả ngắn</label>
     <input type="text" id="pubDesc" placeholder="Giới thiệu ngắn về truyện...">
     <label>Thể loại</label>
     <select id="pubGenre"></select>
-    <label>Biểu tượng bìa</label>
-    <div class="nn-emoji-row" id="pubEmojiRow"></div>
     <div class="pub-nsfw-row">
       <label class="pub-check"><input type="checkbox" id="pubIsNsfw"> Truyện 18+ / NSFW (sẽ đăng vào khu riêng)</label>
     </div>

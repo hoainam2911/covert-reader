@@ -21,9 +21,11 @@ Làm theo đúng 4 bước dưới đây — tổng thời gian khoảng 10-15 p
 2. Bấm **New query**
 3. Mở file `schema.sql` (đã gửi kèm) → copy **toàn bộ nội dung**
 4. Dán vào ô query → bấm **Run** (hoặc Ctrl+Enter)
-5. Thấy "Success. No rows returned" là xong — các bảng `novels`, `reading_progress`, `user_settings`, `community_novels` đã được tạo
+5. Thấy "Success. No rows returned" là xong
 
-> 🔄 **Nếu bạn đã setup Supabase từ trước** (đã có bảng `novels` v.v.) và chỉ muốn thêm tính năng Cộng đồng mới: mở `schema.sql`, copy **chỉ phần từ `-- CỘNG ĐỒNG` trở xuống**, dán vào SQL Editor → Run. Không cần chạy lại từ đầu.
+6. Tiếp tục: mở file **`schema_upgrade_v2.sql`** → copy toàn bộ → dán vào **New query** khác → **Run**
+   - File này tạo thêm: ảnh bìa thật (Storage bucket `covers`), bình luận, đánh giá sao, yêu thích, lịch sử đọc
+   - **Nếu bạn đã setup từ trước** (đã từng chạy `schema.sql` cũ rồi) thì chỉ cần chạy file `schema_upgrade_v2.sql` này là đủ, không cần chạy lại `schema.sql`
 
 ## BƯỚC 3 — Lấy API key và điền vào config.js
 
@@ -49,7 +51,7 @@ window.SUPABASE_ANON_KEY = "eyJ....(chuỗi dài của bạn)....";
    - Chọn **Public**
    - Bấm **Create repository**
 2. Trong trang repo vừa tạo, bấm **uploading an existing file** (hoặc kéo thả)
-3. Kéo thả **tất cả 6 file**: `index.html`, `app.html`, `style.css`, `translator.js`, `library.js`, `config.js` (đã điền key). **Không cần** đưa `schema.sql` lên (chỉ dùng 1 lần lúc setup database).
+3. Kéo thả **tất cả 7 file**: `index.html`, `app.html`, `style.css`, `web-truyen-theme.css`, `translator.js`, `library.js`, `config.js` (đã điền key). **Không cần** đưa các file `.sql` lên (chỉ dùng để chạy trong Supabase SQL Editor).
 4. Bấm **Commit changes**
 5. Vào tab **Settings** của repo → menu trái chọn **Pages**
 6. Ở mục **Branch**, chọn `main` → thư mục `/ (root)` → bấm **Save**
@@ -74,18 +76,25 @@ window.SUPABASE_ANON_KEY = "eyJ....(chuỗi dài của bạn)....";
 - ✅ Vị trí đang đọc (chương + % cuộn trang) — mở máy khác sẽ tự nhảy đúng chỗ
 - ✅ Theme (sáng/tối/nâu) bạn chọn
 
-## 🌐 Tính năng Cộng đồng (mới)
+## 🌐 Tính năng Cộng đồng — đầy đủ như 1 web truyện thật
 
-Sau khi dịch xong 1 truyện trong thư viện riêng, bạn có thể **đăng công khai** cho mọi người cùng đọc:
+**Ảnh bìa thật** — khi tạo truyện hoặc đăng cộng đồng, bấm vào ô "Bấm để chọn ảnh" → tải ảnh từ máy lên (tối đa 5MB), thay vì chọn icon như trước.
 
-1. Mở truyện đã dịch → bấm nút **🌐 Đăng cộng đồng**
-2. Điền tên tác giả hiển thị (để trống = "Ẩn danh"), mô tả ngắn, chọn **thể loại** (Tiên hiệp, Huyền huyễn, Kiếm hiệp, Đô thị, Xuyên không, Hệ thống, Đam mỹ, Ngôn tình... hơn 20 thể loại tham khảo từ các web truyện tu tiên phổ biến), chọn icon bìa
-3. Nếu truyện có nội dung **18+/NSFW** → tick vào ô tương ứng, có thể **tự đặt mật khẩu riêng** để giới hạn người xem (để trống = ai cũng xem được, chỉ là vào khu NSFW riêng)
-4. Bấm **Đăng truyện**
+**Trang chi tiết truyện** — bấm vào 1 truyện trong Cộng đồng sẽ mở trang riêng gồm:
+- Ảnh bìa lớn, tên truyện, tác giả, thể loại, mô tả
+- Số lượt xem, số chương, điểm đánh giá trung bình
+- Nút ⭐ **Đánh giá 1-5 sao** (phải đăng nhập)
+- Nút ☆ **Yêu thích** — lưu lại để xem trong tab ⭐ Yêu thích
+- **Danh sách chương** dạng lưới, bấm vào chương nào là nhảy thẳng tới đó
+- **Bình luận** bên dưới — viết, xem bình luận người khác, xoá bình luận của chính mình
 
-Khu vực Cộng đồng nằm ở tab **🌐 Cộng đồng** trong màn hình thư viện — có 2 mục riêng biệt: **📖 Truyện thường** và **🔞 NSFW** (mục NSFW không hiện trong mục thường), kèm bộ lọc theo thể loại. Truyện NSFW có đặt pass sẽ yêu cầu nhập đúng mật khẩu mới đọc được.
+**Tab ⭐ Yêu thích** — danh sách các truyện cộng đồng bạn đã đánh dấu
 
-> Truyện đăng lên Cộng đồng là **bản sao riêng** (không liên kết với truyện gốc trong thư viện cá nhân) — sửa bản gốc sau này sẽ không tự cập nhật vào bản đã đăng.
+**Tab 🕐 Lịch sử đọc** — tự động ghi lại truyện cộng đồng bạn đã đọc gần đây + đang ở chương nào, bấm vào để đọc tiếp
+
+**Đăng truyện** — sau khi dịch xong 1 truyện trong thư viện riêng, bấm nút **🌐 Đăng cộng đồng** → điền ảnh bìa, tên tác giả, mô tả, thể loại (hơn 20 thể loại tu tiên/huyền huyễn), bật NSFW nếu cần (có thể tự đặt mật khẩu riêng)
+
+> Truyện đăng lên Cộng đồng là **bản sao riêng** — sửa bản gốc trong thư viện cá nhân sau này sẽ không tự cập nhật vào bản đã đăng.
 
 ## Lưu ý chi phí
 Supabase free tier: 500MB database, 50,000 lượt request xác thực/tháng, 5GB băng thông — đủ dùng thoải mái cho cá nhân, không tốn phí gì. GitHub Pages hoàn toàn miễn phí cho repo public.
